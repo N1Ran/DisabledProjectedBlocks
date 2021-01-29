@@ -35,10 +35,10 @@ namespace DisableProjectedBlocks
         public static void Patch(PatchContext ctx)
         {
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("RemoveProjection", BindingFlags.Instance | BindingFlags.NonPublic)).
-                Suffixes.Add(typeof(ProjectorPatch).GetMethod(nameof(CounterDecrease), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+                Suffixes.Add(typeof(ProjectorPatch).GetMethod(nameof(IncreaseCount), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("InitializeClipboard", BindingFlags.Instance | BindingFlags.NonPublic)).
-                Suffixes.Add(typeof(ProjectorPatch).GetMethod(nameof(CounterIncrease), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
+                Suffixes.Add(typeof(ProjectorPatch).GetMethod(nameof(DecreaseCount), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
 
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("BuildInternal", BindingFlags.Instance | BindingFlags.NonPublic)).
                 Prefixes.Add(typeof(ProjectorPatch).GetMethod(nameof(ExtraCheck), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance));
@@ -82,35 +82,45 @@ namespace DisableProjectedBlocks
             return false;
         }
 
-        private static void CounterIncrease(MyProjectorBase __instance)
+        private static void DecreaseCount(MyProjectorBase __instance)
         {
             if (__instance == null) return;
             if ( MainLogic.Instance.Config?.CounterPcuIncrease == false)return;
 
             var identity = MySession.Static.Players.TryGetIdentity(__instance.BuiltBy);
 
-            var num1 = __instance?.Clipboard?.CopiedGrids?.Sum(copiedGrid => copiedGrid.CubeBlocks.Count);
+            var copiedGrids = __instance?.Clipboard?.CopiedGrids;
+            if (copiedGrids == null) return;
 
-            if (identity == null || num1 == null) return;
-            var num2 = (int) num1;
+            int num1 = 0;
+
+            foreach (MyObjectBuilder_CubeGrid copiedGrid in copiedGrids)
+                num1 += copiedGrid.CubeBlocks.Count;
+            if (identity == null || num1 == 0) return;
+            var num2 = num1;
             if (!MySession.Static.CheckLimitsAndNotify(__instance.BuiltBy, __instance.BlockDefinition.BlockPairName, num2, 0, 0, (Dictionary<string, int>) null))
                 return;
             identity.BlockLimits.DecreaseBlocksBuilt(__instance.BlockDefinition.BlockPairName, num2, __instance.CubeGrid, false);
 
-            __instance.CubeGrid.BlocksPCU += num2;
+            __instance.CubeGrid.BlocksPCU -= num2;
 
         }
 
-        private static void CounterDecrease(MyProjectorBase __instance)
+        private static void IncreaseCount(MyProjectorBase __instance)
         {
             if (__instance == null) return;
             if ( MainLogic.Instance.Config?.CounterPcuIncrease == false)return;
             var identity = MySession.Static.Players.TryGetIdentity(__instance.BuiltBy);
 
-            var num1 = __instance.Clipboard?.PreviewGrids?.Sum(x => x.CubeBlocks.Count);
+            var previewGrids = __instance?.Clipboard?.PreviewGrids;
+            if (previewGrids == null) return;
+            int num = 0;
 
-            if (identity == null || num1 == null) return;
-            var num2 = (int) num1;
+            foreach (MyCubeGrid previewGrid in previewGrids)
+                num += previewGrid.CubeBlocks.Count;
+
+            if (identity == null || num == 0) return;
+            var num2 = num;
             if (!MySession.Static.CheckLimitsAndNotify(__instance.BuiltBy, __instance.BlockDefinition.BlockPairName, num2, 0, 0, (Dictionary<string, int>) null))
                 return;
             identity.BlockLimits.IncreaseBlocksBuilt(__instance.BlockDefinition.BlockPairName, num2, __instance.CubeGrid, false);
