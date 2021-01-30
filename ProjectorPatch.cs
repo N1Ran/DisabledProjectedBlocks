@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Windows.Controls;
+using DisableProjectedBlocks;
 using NLog;
 using Sandbox.Common.ObjectBuilders;
 using Sandbox.Definitions;
@@ -22,7 +23,7 @@ using VRage.Game.ModAPI.Ingame;
 using VRage.Utils;
 using VRageMath;
 
-namespace DisableProjectedBlocks
+namespace DisabledProjectedBlocks
 {
     public static class ProjectorPatch
     {
