@@ -20,6 +20,7 @@ using Torch.Managers.PatchManager;
 using Torch.Utils;
 using VRage.Collections;
 using VRage.Game.ModAPI.Ingame;
+using VRage.Game.ObjectBuilders.ComponentSystem;
 using VRage.Utils;
 using VRageMath;
 
@@ -219,9 +220,18 @@ namespace DisabledProjectedBlocks
                     {
                         foreach (var data in components)
                         {
-                            if (!(data.Component is MyObjectBuilder_Inventory inv) || inv.Items.Count == 0 ) continue;
-                            inv.Clear();
-                            invCount++;
+
+                            if (data.Component is MyObjectBuilder_Inventory inv && inv.Items.Count > 0)
+                            {
+                                inv.Clear();
+                                invCount++;
+                            }
+
+                            if (data.Component is MyObjectBuilder_EntityCapacitorComponent cap && cap.StoredPower > 0)
+                            {
+                                cap.StoredPower = 0;
+                                
+                            }
                         }
                     }
 
