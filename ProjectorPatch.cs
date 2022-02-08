@@ -202,9 +202,9 @@ namespace DisabledProjectedBlocks
                             break;
                         case MyObjectBuilder_SmallMissileLauncherReload mm:
                         {
-                            if (mm.GunBase.RemainingAmmo > 0)
+                            if (mm.GunBase?.RemainingAmmo > 0)
                             {
-                                mm.GunBase.RemainingAmmos.Dictionary.Clear();
+                                mm.GunBase.RemainingAmmos.Dictionary?.Clear();
                                 invCount++;
                             }
                         }
