@@ -31,7 +31,6 @@ namespace DisabledProjectedBlocks
         private static readonly MethodInfo RemoveBlueprintMethod = typeof(MyProjectorBase).GetMethod("OnRemoveProjectionRequest", BindingFlags.NonPublic | BindingFlags.Instance);
 
         private static readonly Logger Log = MainLogic.Log;
-        private static readonly Guid BlockLimiterGuid = new Guid("11fca5c4-01b6-4fc3-a215-602e2325be2b");
 
         public static void Patch(PatchContext ctx)
         {
@@ -43,35 +42,9 @@ namespace DisabledProjectedBlocks
 
             ctx.GetPattern(typeof(MyProjectorBase).GetMethod("BuildInternal", BindingFlags.Instance | BindingFlags.NonPublic)).
                 Prefixes.Add(typeof(ProjectorPatch).GetMethod(nameof(ExtraCheck), BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Instance));
-            var blockLimiterSupported = false;
-            if (MainLogic.PluginManager.Plugins.TryGetValue(BlockLimiterGuid, out var blockLimiterPlugin))
-            {
-                var version = blockLimiterPlugin.Version.Split('.');
-                if (int.TryParse(version[0].Replace("v", ""), out var number) && number > 1)
-                {
-                    blockLimiterSupported = true;
-                }
-                else
-                {
-                    if (number > 0)
-                    {
-                        if (int.TryParse(version[1], out number) && number >= 7)
-                            blockLimiterSupported = true;
-                    }
-                }
-            }
 
-            if (!blockLimiterSupported)
-            {
-                Log.Warn("BlockLimiter not installed or outdated.  Support not enabled");
-                ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
-                    Prefixes.Add(typeof(ProjectorPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
-
-            }
-            else
-            {
-                Log.Warn("BlockLimiter support initiated");
-            }
+            ctx.GetPattern(typeof(MyProjectorBase).GetMethod("OnNewBlueprintSuccess", BindingFlags.Instance | BindingFlags.NonPublic)).
+                Prefixes.Add(typeof(ProjectorPatch).GetMethod(nameof(PrefixNewBlueprint), BindingFlags.Static| BindingFlags.Instance| BindingFlags.NonPublic));
            
 
         }
@@ -190,8 +163,20 @@ namespace DisabledProjectedBlocks
                     continue;
                 }
 
+                if (block is MyObjectBuilder_OreDetector oreDetector && MainLogic.Instance.Config.ResetOreDetectors)
+                {
+                    oreDetector.DetectionRadius = 0;
+                }
+
+                if (block is MyObjectBuilder_RemoteControl rm && MainLogic.Instance.Config.ResetRemoteControl)
+                {
+                    rm.AutopilotSpeedLimit = 0;
+                    rm.AutomaticBehaviour = null;
+                }
+
                 if (MainLogic.Instance.Config.ClearInventory)
                 {
+                  
                     switch (block)
                     {
                         case MyObjectBuilder_Drill drill:
@@ -215,7 +200,17 @@ namespace DisabledProjectedBlocks
                                 reactor.Inventory?.Clear();
                             }
                             break;
-                            
+                        case MyObjectBuilder_SmallMissileLauncherReload mm:
+                        {
+                            if (mm.GunBase.RemainingAmmo > 0)
+                            {
+                                mm.GunBase.RemainingAmmos.Dictionary.Clear();
+                                invCount++;
+                            }
+                        }
+                            break;
+                        
+
                     }
 
                     var components = block.ComponentContainer?.Components;
@@ -229,6 +224,17 @@ namespace DisabledProjectedBlocks
                             invCount++;
                         }
                     }
+
+                    try
+                    {
+                        block.GetType()?.GetField("Inventory")?.SetValue(block,null);
+                        block.GetType()?.GetField("InputInventory")?.SetValue(block,null);
+                        block.GetType()?.GetField("OutputInventory")?.SetValue(block,null);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Warn(e,"There was an issue clearing projection inventories");
+                    }
                 }
 
                 if (MainLogic.Instance.Config.ResetJumpDrives && block is MyObjectBuilder_JumpDrive jDrive && Math.Abs(jDrive.StoredPower) > 0)
@@ -237,10 +243,19 @@ namespace DisabledProjectedBlocks
                     jCount++;
                 }
 
-                if (MainLogic.Instance.Config.ResetTanks && block is MyObjectBuilder_GasTank tank && tank.FilledRatio > 0)
+                if (MainLogic.Instance.Config.ResetTanks)
                 {
-                    tank.FilledRatio = 0;
-                    tCount++;
+                    if (block is MyObjectBuilder_GasTank tank && tank.FilledRatio > 0)
+                    {
+                        tank.FilledRatio = 0;
+                        tCount++;
+                    }
+
+                    if (block is MyObjectBuilder_HydrogenEngine hEngine && hEngine.Capacity > 0)
+                    {
+                        hEngine.Capacity = 0;
+                        tCount++;
+                    }
                 }
 
                 if (MainLogic.Instance.Config.RemoveScripts && block is MyObjectBuilder_MyProgrammableBlock pbBlock)

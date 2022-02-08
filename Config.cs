@@ -15,6 +15,9 @@ namespace DisableProjectedBlocks
         private bool _resetTanks;
         private bool _clearInventory;
         private bool _resetJD;
+        private bool _resetOreDetectors;
+        private bool _resetSignalBlocks;
+        private bool _resetRemotes;
 
         [XmlIgnore] public MtObservableList<string> RemoveBlocks { get; } = new MtObservableList<string>();
 
@@ -107,6 +110,36 @@ namespace DisableProjectedBlocks
             set
             {
                 _resetTanks = value;
+                OnPropertyChanged();
+            }
+        }
+        
+        public bool ResetOreDetectors
+        {
+            get => _resetOreDetectors;
+            set
+            {
+                _resetOreDetectors = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool ResetSignalBlocks
+        {
+            get => _resetSignalBlocks;
+            set
+            {
+                _resetSignalBlocks = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public bool ResetRemoteControl
+        {
+            get => _resetRemotes;
+            set
+            {
+                _resetRemotes = value;
                 OnPropertyChanged();
             }
         }
