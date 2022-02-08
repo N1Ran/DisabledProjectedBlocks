@@ -204,7 +204,7 @@ namespace DisabledProjectedBlocks
                         {
                             if (mm.GunBase?.RemainingAmmo > 0)
                             {
-                                mm.GunBase.RemainingAmmos.Dictionary?.Clear();
+                                mm.GunBase = null;
                                 invCount++;
                             }
                         }
